@@ -2,6 +2,6 @@ from extract import Extractor
 
 extractor = Extractor()
 
-phrase = "asda asdasda das daasd a"
+phrase = "The deep river is there"
 extractor(phrase)
-print(extractor.words)
+extractor.plot_graph()
