@@ -1,16 +1,23 @@
 import networkx as nx
 from typing import List
 import matplotlib.pyplot as plt
+import re
 
 
 class Extractor:
     def __init__(self):
         self._graph = nx.Graph()
         self._words: List[str] = []
+        self._pattern = re.compile(r"([\wàâäéèêëîïôöùûüÿç]+)'([\wàâäéèêëîïôöùûüÿç]+)|([\wàâäéèêëîïôöùûüÿç]+)")
+
+    def _tokenizer(self, text) -> List[str]:
+        tokens = self._pattern.findall(text)
+        tokens = [token for match in tokens for token in match if token]
+        return tokens
 
     def _process(self, phrase: str, *, sep=" ") -> None:
         assert phrase, "The phrase is empty"
-        self._words = phrase.split(sep)
+        self._words = self._tokenizer(phrase)
 
         self._graph.add_nodes_from(self._words)
         self._graph.add_node("T")
