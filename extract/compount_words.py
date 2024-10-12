@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List
 from tqdm import tqdm
+import re
 
 
 class CompoundWordsCache:
@@ -11,6 +12,7 @@ class CompoundWordsCache:
     CACHE_FILE = DATA_FOLDER / "compound_words_cache.pkl"
     CACHE_EXPIRY = timedelta(days=7)  # Cache expires after 7 days
     URL = "https://www.jeuxdemots.org/JDM-LEXICALNET-FR/20240924-LEXICALNET-JEUXDEMOTS-ENTRIES-MWE.txt"
+    WORD_PATTERN = re.compile(r'(\d+);\"(.+)\";')
 
     def __init__(self):
         self.__compound_words = None
@@ -36,26 +38,24 @@ class CompoundWordsCache:
         return (datetime.now() - self.last_updated) > self.CACHE_EXPIRY
 
     def _fetch_and_cache(self):
-        print("Fetching compound words from the web...")
         try:
-            response = requests.get(self.URL)
+            response = requests.get(self.URL, stream=True)
             response.raise_for_status()
         except requests.RequestException as e:
             print(e)
             raise Exception("Failed to fetch compound words")
 
-        lines = response.text.split("\n")
         self.__compound_words = []
-        for line in tqdm(lines, desc="Processing compound words"):
-            if line.startswith("//") or not line.strip():
-                continue
-            parts = line.split(";")
-            if len(parts) >= 3:
-                term = parts[1].strip('"')
-                self.__compound_words.append(term.lower())
+        for line in tqdm(response.iter_lines(), desc="Getting compound words from jdm..."):
+            line = line.decode("ANSI").strip()
+            match = self.WORD_PATTERN.match(line)
+            if match:
+                self.__compound_words.append(match.group(2).lower())
 
         self.last_updated = datetime.now()
         self._save_cache()
+
+        print(f"Compound words fetched and cached. Total: {len(self.__compound_words)}")
 
     def _save_cache(self):
         with open(self.CACHE_FILE, "wb") as f:
