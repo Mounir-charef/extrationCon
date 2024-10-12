@@ -9,9 +9,7 @@ class Extractor:
     def __init__(self):
         self._graph = nx.Graph()
         self._words: List[str] = []
-        self._pattern = re.compile(
-            r"([\S]+)'([\S]+)|([\S]+)"
-        )
+        self._pattern = re.compile(r"(\S+)'(\S+)|(\S+)")
 
         self._compound_words_store = CompoundWordsCache()
 
@@ -43,30 +41,26 @@ class Extractor:
         for compound_word in self._compound_words_store.compound_words:
             if compound_word not in phrase:
                 continue
-            print(f"Compound word: {compound_word}")
             words = self._tokenizer(compound_word)
-            if len(words) < 2:
-                print(f"Invalid compound word: {compound_word}")
 
             # Check if the compound word is in the phrase in the correct order
-            if all(word in self._words for word in words):
-                if all(
-                    self._words.index(words[i]) < self._words.index(words[i + 1])
-                    for i in range(len(words) - 1)
-                ):
-                    self._graph.add_node(compound_word)
-                    first_index = self._words.index(words[0])
-                    last_index = self._words.index(words[-1])
-                    self._graph.add_edge(
-                        self._words[first_index],
-                        compound_word,
-                        label="r_compound",
-                    )
-                    self._graph.add_edge(
-                        compound_word,
-                        self._words[last_index],
-                        label="r_compound",
-                    )
+            if all(word in self._words for word in words) and all(
+                self._words.index(words[i]) < self._words.index(words[i + 1])
+                for i in range(len(words) - 1)
+            ):
+                self._graph.add_node(compound_word)
+                first_index = self._words.index(words[0])
+                last_index = self._words.index(words[-1])
+                self._graph.add_edge(
+                    self._words[first_index],
+                    compound_word,
+                    label="r_compound",
+                )
+                self._graph.add_edge(
+                    compound_word,
+                    self._words[last_index],
+                    label="r_compound",
+                )
 
     def plot_graph(self):
         pos = nx.spring_layout(self._graph)

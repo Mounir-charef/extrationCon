@@ -12,7 +12,7 @@ class CompoundWordsCache:
     CACHE_FILE = DATA_FOLDER / "compound_words_cache.pkl"
     CACHE_EXPIRY = timedelta(days=7)  # Cache expires after 7 days
     URL = "https://www.jeuxdemots.org/JDM-LEXICALNET-FR/20240924-LEXICALNET-JEUXDEMOTS-ENTRIES-MWE.txt"
-    WORD_PATTERN = re.compile(r'(\d+);\"(.+)\";')
+    WORD_PATTERN = re.compile(r"(\d+);\"(.+)\";")
 
     def __init__(self):
         self.__compound_words = None
@@ -46,7 +46,9 @@ class CompoundWordsCache:
             raise Exception("Failed to fetch compound words")
 
         self.__compound_words = []
-        for line in tqdm(response.iter_lines(), desc="Getting compound words from jdm..."):
+        for line in tqdm(
+            response.iter_lines(), desc="Getting compound words from jdm..."
+        ):
             line = line.decode("ANSI").strip()
             match = self.WORD_PATTERN.match(line)
             if match:
