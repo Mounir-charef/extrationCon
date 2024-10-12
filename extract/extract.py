@@ -49,17 +49,17 @@ class Extractor:
                 for i in range(len(words) - 1)
             ):
                 self._graph.add_node(compound_word)
-                first_index = self._words.index(words[0])
-                last_index = self._words.index(words[-1])
+                first_index = self._words.index(words[0]) - 1
+                last_index = self._words.index(words[-1]) + 1
                 self._graph.add_edge(
                     self._words[first_index],
                     compound_word,
-                    label="r_compound",
+                    label="r_succ",
                 )
                 self._graph.add_edge(
                     compound_word,
                     self._words[last_index],
-                    label="r_compound",
+                    label="r_succ",
                 )
 
     def plot_graph(self):
