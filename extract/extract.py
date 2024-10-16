@@ -18,6 +18,42 @@ class Extractor:
         tokens = [token for match in tokens for token in match if token]
         return tokens
 
+    def _find_compound_words(self, phrase: str) -> None:
+        for compound_word in self._compound_words_store.compound_words:
+            if compound_word not in phrase:
+                continue
+            words = self._tokenizer(compound_word)
+
+            start_index = 0
+            while start_index < len(self._words):
+                try:
+                    first_index = self._words.index(words[0], start_index)
+                    if all(
+                            self._words[first_index + i] == words[i]
+                            for i in range(len(words))
+                    ):
+                        self._graph.add_node(compound_word)
+                        last_index = first_index + len(words) - 1
+
+                        if first_index > 0:
+                            self._graph.add_edge(
+                                self._words[first_index - 1],
+                                compound_word,
+                                label="r_succ",
+                            )
+                        if last_index < len(self._words) - 1:
+                            self._graph.add_edge(
+                                compound_word,
+                                self._words[last_index + 1],
+                                label="r_succ",
+                            )
+
+                        start_index = last_index + 1
+                    else:
+                        start_index = first_index + 1
+                except ValueError:
+                    break
+
     def _process(self, phrase: str) -> None:
         assert phrase, "The phrase is empty"
         assert isinstance(phrase, str), "The phrase should be a string"
@@ -38,29 +74,7 @@ class Extractor:
             )
 
         # Add compound words
-        for compound_word in self._compound_words_store.compound_words:
-            if compound_word not in phrase:
-                continue
-            words = self._tokenizer(compound_word)
-
-            # Check if the compound word is in the phrase in the correct order
-            if all(word in self._words for word in words) and all(
-                self._words.index(words[i]) < self._words.index(words[i + 1])
-                for i in range(len(words) - 1)
-            ):
-                self._graph.add_node(compound_word)
-                first_index = self._words.index(words[0]) - 1
-                last_index = self._words.index(words[-1]) + 1
-                self._graph.add_edge(
-                    self._words[first_index],
-                    compound_word,
-                    label="r_succ",
-                )
-                self._graph.add_edge(
-                    compound_word,
-                    self._words[last_index],
-                    label="r_succ",
-                )
+        self._find_compound_words(phrase)
 
     def plot_graph(self):
         pos = nx.spring_layout(self._graph)
