@@ -1,7 +1,7 @@
 import networkx as nx
 from typing import List
 import matplotlib.pyplot as plt
-from .compount_words import CompoundWordsCache
+from .compount_words import CompoundWordsStore
 import re
 
 
@@ -11,7 +11,7 @@ class Extractor:
         self._words: List[str] = []
         self._pattern = re.compile(r"(\S+)'(\S+)|(\S+)")
 
-        self._compound_words_store = CompoundWordsCache()
+        self._compound_words_store = CompoundWordsStore()
 
     def _tokenizer(self, text) -> List[str]:
         tokens = self._pattern.findall(text)
@@ -29,8 +29,8 @@ class Extractor:
                 try:
                     first_index = self._words.index(words[0], start_index)
                     if all(
-                            self._words[first_index + i] == words[i]
-                            for i in range(len(words))
+                        self._words[first_index + i] == words[i]
+                        for i in range(len(words))
                     ):
                         self._graph.add_node(compound_word)
                         last_index = first_index + len(words) - 1
