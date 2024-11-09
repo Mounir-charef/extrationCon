@@ -63,6 +63,19 @@ class JDMWordsStore(CachedStore):
                     word_dump["nt"].append(nt.groups())
                 e = e_pattern.match(line.decode("latin-1"))
                 if e:
+                    second_group = e.groups()[1]
+                    # check if the second group contain : > or en: or an: or bn: or :r or wiki: umls: or dbnary:, if so skip
+                    if (
+                        ">" in second_group
+                        or "en:" in second_group
+                        or "an:" in second_group
+                        or "bn:" in second_group
+                        or ":r" in second_group
+                        or "wiki:" in second_group
+                        or "umls:" in second_group
+                        or "dbnary:" in second_group
+                    ):
+                        continue
                     word_dump["e"].append(e.groups())
                 r = r_pattern.match(line.decode("latin-1"))
                 if r:
