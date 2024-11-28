@@ -2,6 +2,7 @@ import networkx as nx
 from typing import List
 import matplotlib.pyplot as plt
 from .compount_words import CompoundWordsStore
+from .disambiguate_terms import DisambiguateTermsStore
 import re
 
 
@@ -12,11 +13,11 @@ class Extractor:
         self._pattern = re.compile(r"(\S+)'(\S+)|(\S+)")
 
         self._compound_words_store = CompoundWordsStore()
+        self._disambiguate_terms_store = DisambiguateTermsStore()
 
     def _tokenizer(self, text) -> List[str]:
         tokens = self._pattern.findall(text)
-        tokens = [token for match in tokens for token in match if token]
-        return tokens
+        return [token for match in tokens for token in match if token]
 
     def _find_compound_words(self, phrase: str) -> None:
         for compound_word in self._compound_words_store.compound_words:

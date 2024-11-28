@@ -1,7 +1,7 @@
 import requests
 from tqdm import tqdm
 import re
-from .cached_store import CachedStore
+from cached_store import CachedStore
 
 CACHE_FILE = "compound_words_cache.pkl"
 
@@ -23,7 +23,7 @@ class CompoundWordsStore(CachedStore):
 
         compound_words = []
         for line in tqdm(
-                response.iter_lines(), desc="Getting compound words from jdm..."
+            response.iter_lines(), desc="Getting compound words from jdm..."
         ):
             line = line.decode("ANSI").strip()
             match = self.WORD_PATTERN.match(line)
