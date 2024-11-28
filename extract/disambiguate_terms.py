@@ -32,7 +32,7 @@ class DisambiguateTermsStore(CachedStore):
         with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
             with zip_file.open(zip_file.namelist()[0]) as file:
                 for line in tqdm(file, desc="Reading disambiguate terms"):
-                    line = line.decode("latin1").strip()
+                    line = line.decode("latin1").strip().lower()
                     match = self.WORD_PATTERN.match(line)
                     if match:
                         term = match.group(1)
