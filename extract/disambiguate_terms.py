@@ -6,7 +6,7 @@ import io
 import datetime
 from collections import defaultdict
 
-from cached_store import CachedStore
+from .cached_store import CachedStore
 
 CACHE_FILE = "disambiguate_terms_cache.pkl"
 
@@ -16,11 +16,9 @@ class DisambiguateTermsStore(CachedStore):
     WORD_PATTERN = re.compile(r"^(.*?)\s;\s(.*?)\s;\s(\d+)$")
 
     def __init__(self):
-        super().__init__(
-            cache_file=CACHE_FILE, cache_expiry=datetime.timedelta(seconds=1)
-        )
+        super().__init__(cache_file=CACHE_FILE)
 
-    def _get_process_data(self) -> dict[str, list[tuple[tuple[str, str], int]]]:
+    def _get_process_data(self) -> dict[str, list[tuple[str, int]]]:
         try:
             response = requests.get(self.URL)
             response.raise_for_status()
@@ -40,12 +38,12 @@ class DisambiguateTermsStore(CachedStore):
                         if len(disambiguate_term) < 2:
                             continue
                         weight = int(match.group(3))
-                        terms[term].append((disambiguate_term, weight))
+                        terms[term].append((disambiguate_term[1], weight))
         return terms
 
     @property
-    def disambiguate_terms(self) -> dict[str, list[tuple[tuple[str, str], int]]]:
+    def disambiguate_terms(self) -> dict[str, list[tuple[str, int]]]:
         return self.get_data()
 
-    def get_disambiguate_term(self, term: str) -> list[tuple[tuple[str, str], int]]:
+    def get_disambiguate_term(self, term: str) -> list[tuple[str, int]]:
         return self.disambiguate_terms.get(term, [])

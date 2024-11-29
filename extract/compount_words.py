@@ -1,7 +1,7 @@
 import requests
 from tqdm import tqdm
 import re
-from cached_store import CachedStore
+from .cached_store import CachedStore
 
 CACHE_FILE = "compound_words_cache.pkl"
 
