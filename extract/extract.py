@@ -39,8 +39,17 @@ class Extractor:
                 new_data = self._jdm_words_store._fetch_new_data(word)
                 # update the cached data
                 self._jdm_words_store._update_and_cache(word, new_data)
-        print("at the end : ")
-        print(self._jdm_words_store.get_data().keys())
+            # get the entries where the type is 4
+            print(
+                f"entry of type 4 for word {word} ",
+                [e for e in data[word]["r"] if int(e[3]) == 4],
+            )
+            print(
+                f"entry of type 19 for word {word} ",
+                [e for e in data[word]["r"] if int(e[3]) == 19],
+            )
+        # print("at the end : ")
+        # print(self._jdm_words_store.get_data().keys())
 
     def _find_compound_words(self, phrase: str) -> None:
         for compound_word in self._compound_words_store.compound_words:
