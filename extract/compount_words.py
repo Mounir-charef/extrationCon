@@ -23,9 +23,9 @@ class CompoundWordsStore(CachedStore):
 
         compound_words = []
         for line in tqdm(
-                response.iter_lines(), desc="Getting compound words from jdm..."
+            response.iter_lines(), desc="Getting compound words from jdm..."
         ):
-            line = line.decode("ANSI").strip()
+            line = line.decode("latin-1").strip()
             match = self.WORD_PATTERN.match(line)
             if match:
                 compound_words.append(match.group(2).lower())

@@ -1,7 +1,14 @@
 from extract import Extractor
+from extract.jdmLoad import JDMWordsStore
+
+# jdm = JDMWordsStore("pute")
 
 extractor = Extractor()
 
-phrase = " l'aventure river Serment des Horaces is there Serment des Horaces"
+# extractor.display_words()
+
+# # phrase = " l'aventure river Serment des Horaces is there Serment des Horaces"
+phrase = "le petit chat boit du sexy"
+# phrase = "petit"
 extractor(phrase)
-extractor.plot_graph()
+# extractor.plot_graph()
