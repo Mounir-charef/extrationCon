@@ -1,7 +1,9 @@
+import json
 import networkx as nx
 from typing import List
 import matplotlib.pyplot as plt
 from .compount_words import CompoundWordsStore
+from .jdmLoad import JDMWordsStore
 import re
 
 
@@ -13,10 +15,41 @@ class Extractor:
 
         self._compound_words_store = CompoundWordsStore()
 
+        self._jdm_words_store = JDMWordsStore()
+
     def _tokenizer(self, text) -> List[str]:
         tokens = self._pattern.findall(text)
         tokens = [token for match in tokens for token in match if token]
         return tokens
+
+    def _get_data_info(self) -> None:
+        """
+        Retrive data from the JDMWordsStore
+        if the any word is not in the Store, fetch it and cache it
+        else just display the data
+        """
+        data = self._jdm_words_store.get_data()
+        print(data.keys())
+        for word in self._words:
+            if word in data:
+                print("the word ", word, " is in the store")
+                print(data[word]["eid"])
+            else:
+                print("fetching data")
+                new_data = self._jdm_words_store._fetch_new_data(word)
+                # update the cached data
+                self._jdm_words_store._update_and_cache(word, new_data)
+            # get the entries where the type is 4
+            print(
+                f"entry of type 4 for word {word} ",
+                [e for e in data[word]["r"] if int(e[3]) == 4],
+            )
+            print(
+                f"entry of type 19 for word {word} ",
+                [e for e in data[word]["r"] if int(e[3]) == 19],
+            )
+        # print("at the end : ")
+        # print(self._jdm_words_store.get_data().keys())
 
     def _find_compound_words(self, phrase: str) -> None:
         for compound_word in self._compound_words_store.compound_words:
@@ -61,6 +94,8 @@ class Extractor:
         phrase = phrase.lower()
 
         self._words = self._tokenizer(phrase)
+        # Add JDM words
+        self._get_data_info()
         self._words.insert(0, "⊤")
         self._words.append("⊥")
         self._graph.add_nodes_from(self._words)
