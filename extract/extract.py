@@ -13,7 +13,8 @@ class Extractor:
     def __init__(self):
         self._graph = nx.Graph()
         self._words: List[str] = []
-        self._pattern = re.compile(r"(\S+)'(\S+)|(\S+)")
+        self._pattern = re.compile(r"(\S+)'(\S+)|(\S+)", re.IGNORECASE)
+        self._punctuation_pattern = re.compile(r"[^\w'-]")
         self._compound_words_store = CompoundWordsStore(
             cache_expiry=datetime.timedelta(days=30)
         )
@@ -42,7 +43,10 @@ class Extractor:
 
     def _tokenizer(self, text) -> List[str]:
         tokens = self._pattern.findall(text)
-        return [token for match in tokens for token in match if token]
+        # flatten the list
+        tokens = [token for match in tokens for token in match if token]
+        clean_tokens = [self._punctuation_pattern.sub("", token) for token in tokens]
+        return [token for token in clean_tokens if token]
 
     def _process(self, phrase: str) -> None:
         assert phrase, "The phrase is empty"
