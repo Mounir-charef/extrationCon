@@ -1,8 +1,8 @@
-import json
 import networkx as nx
 from typing import List
 import matplotlib.pyplot as plt
 from .compount_words import CompoundWordsStore
+from .disambiguate_terms import DisambiguateTermsStore
 from .jdmLoad import JDMWordsStore
 import re
 
@@ -12,46 +12,66 @@ class Extractor:
         self._graph = nx.Graph()
         self._words: List[str] = []
         self._pattern = re.compile(r"(\S+)'(\S+)|(\S+)")
-
         self._compound_words_store = CompoundWordsStore()
-
-        self._jdm_words_store = JDMWordsStore()
+        self._disambiguate_terms_store = DisambiguateTermsStore()
+        self.jdm_words_store = JDMWordsStore()
 
     def _tokenizer(self, text) -> List[str]:
         tokens = self._pattern.findall(text)
-        tokens = [token for match in tokens for token in match if token]
-        return tokens
+        return [token for match in tokens for token in match if token]
 
-    def _get_data_info(self) -> None:
-        """
-        Retrive data from the JDMWordsStore
-        if the any word is not in the Store, fetch it and cache it
-        else just display the data
-        """
-        data = self._jdm_words_store.get_data()
-        print(data.keys())
-        for word in self._words:
-            if word in data:
-                print("the word ", word, " is in the store")
-                print(data[word]["eid"])
-            else:
-                print("fetching data")
-                new_data = self._jdm_words_store._fetch_new_data(word)
-                # update the cached data
-                self._jdm_words_store._update_and_cache(word, new_data)
-            # get the entries where the type is 4
-            print(
-                f"entry of type 4 for word {word} ",
-                [e for e in data[word]["r"] if int(e[3]) == 4],
+    def _process(self, phrase: str) -> None:
+        assert phrase, "The phrase is empty"
+        assert isinstance(phrase, str), "The phrase should be a string"
+
+        phrase = phrase.lower()
+
+        self._words = self._tokenizer(phrase)
+        # Add JDM words
+        self._get_data_info()
+        self._words.insert(0, "⊤")
+        self._words.append("⊥")
+        self._graph.add_nodes_from(self._words)
+
+        if not self._words:
+            raise Exception("No words founds")
+
+        for index in range(len(self._words) - 1):
+            self._graph.add_edge(
+                self._words[index], self._words[index + 1], label="r_succ"
             )
-            print(
-                f"entry of type 19 for word {word} ",
-                [e for e in data[word]["r"] if int(e[3]) == 19],
-            )
-        # print("at the end : ")
-        # print(self._jdm_words_store.get_data().keys())
+
+        # Add compound words
+        self._find_compound_words(phrase)
+
+        # Resolve disambiguate terms
+        self.resolve_disambiguate_terms()
+
+    def plot_graph(self):
+        pos = nx.spring_layout(self._graph)
+        labels = nx.get_edge_attributes(self._graph, "label")
+
+        plt.figure(figsize=(10, 8))
+        nx.draw(
+            self._graph,
+            pos,
+            with_labels=True,
+            node_size=3000,
+            node_color="skyblue",
+            font_size=15,
+            font_weight="bold",
+            edge_color="gray",
+        )
+        nx.draw_networkx_edge_labels(self._graph, pos, edge_labels=labels)
+        plt.title("Graph Visualization")
+        plt.show()
 
     def _find_compound_words(self, phrase: str) -> None:
+        """
+        Find compound words in the phrase and add them to the graph as nodes and connect them to the words
+        :param phrase: str
+        :return: None
+        """
         for compound_word in self._compound_words_store.compound_words:
             if compound_word not in phrase:
                 continue
@@ -87,48 +107,49 @@ class Extractor:
                 except ValueError:
                     break
 
-    def _process(self, phrase: str) -> None:
-        assert phrase, "The phrase is empty"
-        assert isinstance(phrase, str), "The phrase should be a string"
+    def resolve_disambiguate_terms(self) -> None:
+        """
+        Resolve disambiguate terms in the graph by adding the most likely term as a node and connecting the original term to the most likely term
+        :return: None
+        """
+        found_words = list(self._graph.nodes)
+        for word in found_words:
+            print(word, self._disambiguate_terms_store.get_disambiguate_term(word))
+            if word in self._disambiguate_terms_store.disambiguate_terms:
+                most_likely = sorted(
+                    self._disambiguate_terms_store.get_disambiguate_term(word)
+                )[-1]
+                self._graph.add_node(most_likely[0])
+                self._graph.add_edge(word, most_likely[0], label="r_disambiguate")
 
-        phrase = phrase.lower()
-
-        self._words = self._tokenizer(phrase)
-        # Add JDM words
-        self._get_data_info()
-        self._words.insert(0, "⊤")
-        self._words.append("⊥")
-        self._graph.add_nodes_from(self._words)
-
-        if not self._words:
-            raise Exception("No words founds")
-
-        for index in range(len(self._words) - 1):
-            self._graph.add_edge(
-                self._words[index], self._words[index + 1], label="r_succ"
+    def _get_data_info(self) -> None:
+        """
+        Retrive data from the JDMWordsStore
+        if the any word is not in the Store, fetch it and cache it
+        else just display the data
+        """
+        data = self.jdm_words_store.get_data()
+        print(data.keys())
+        for word in self._words:
+            if word in data:
+                print("the word ", word, " is in the store")
+                print(data[word]["eid"])
+            else:
+                print("fetching data")
+                new_data = self.jdm_words_store.fetch_new_data(word)
+                # update the cached data
+                self.jdm_words_store.update_and_cache(word, new_data)
+            # get the entries where the type is 4
+            print(
+                f"entry of type 4 for word {word} ",
+                [e for e in data[word]["r"] if int(e[3]) == 4],
             )
-
-        # Add compound words
-        self._find_compound_words(phrase)
-
-    def plot_graph(self):
-        pos = nx.spring_layout(self._graph)
-        labels = nx.get_edge_attributes(self._graph, "label")
-
-        plt.figure(figsize=(10, 8))
-        nx.draw(
-            self._graph,
-            pos,
-            with_labels=True,
-            node_size=3000,
-            node_color="skyblue",
-            font_size=15,
-            font_weight="bold",
-            edge_color="gray",
-        )
-        nx.draw_networkx_edge_labels(self._graph, pos, edge_labels=labels)
-        plt.title("Graph Visualization")
-        plt.show()
+            print(
+                f"entry of type 19 for word {word} ",
+                [e for e in data[word]["r"] if int(e[3]) == 19],
+            )
+        # print("at the end : ")
+        # print(self.jdm_words_store.get_data().keys())
 
     def __call__(self, phrase: str):
         self._process(phrase)

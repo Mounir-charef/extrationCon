@@ -1,10 +1,8 @@
-import json
-from typing import Optional, Union
 import requests
 from tqdm import tqdm
 import re
 from .cached_store import CachedStore
-from datetime import datetime, timedelta
+from datetime import datetime
 
 CACHE_FILE = "dump_words_cache.pkl"
 
@@ -15,14 +13,15 @@ class JDMWordsStore(CachedStore):
         super().__init__(cache_file=CACHE_FILE)
 
     def _get_process_data(self, *args, **kwargs) -> dict:
-        return self._fetch_new_data(*args, **kwargs)
+        return self.fetch_new_data(*args, **kwargs)
 
-    def _update_and_cache(self, word: str, data: dict):
+    def update_and_cache(self, word: str, data: dict):
         self.data[word] = data
         self.last_updated = datetime.now()
         self._save_cache()
 
-    def _fetch_new_data(self, word: str = None) -> dict:
+    @staticmethod
+    def fetch_new_data(word: str = None) -> dict:
         if word is None:
             return {}
         URL = (
@@ -44,12 +43,7 @@ class JDMWordsStore(CachedStore):
         except requests.RequestException as e:
             print(e)
             raise Exception("Failed to fetch compound words")
-        word_dump = {}
-        word_dump["eid"] = ""
-        word_dump["nt"] = []
-        word_dump["e"] = []
-        word_dump["r"] = []
-        word_dump["rt"] = []
+        word_dump = {"eid": "", "nt": [], "e": [], "r": [], "rt": []}
         for line in tqdm(
             response.iter_lines(),
             desc="Downloading content...",

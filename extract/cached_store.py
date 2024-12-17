@@ -43,10 +43,17 @@ class CachedStore(ABC):
 
     def _load_cache(self) -> bool:
         if self.cache_file.exists():
-            with open(self.cache_file, "rb") as f:
-                self.data, self.last_updated = pickle.load(f)
-            if not self._is_cache_expired():
-                return True
+            try:
+                with open(self.cache_file, "rb") as f:
+                    self.data, self.last_updated = pickle.load(f)
+                if not self._is_cache_expired():
+                    return True
+            except EOFError:
+                return False
+            except pickle.UnpicklingError:
+                return False
+            except Exception as e:
+                print(f"Failed to load cache {self.cache_file}: {e}")
         return False
 
     def get_data(self) -> T:
