@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from .compount_words import CompoundWordsStore
 from .disambiguate_terms import DisambiguateTermsStore
 from .jdmLoad import JDMWordsStore
+from .anaphores_resolver import AnaphoresResolver
 import re
 import datetime
 
@@ -18,6 +19,7 @@ class Extractor:
         )
         self._disambiguate_terms_store = DisambiguateTermsStore()
         self.jdm_words_store = JDMWordsStore()
+        self._anaphores_resolver = AnaphoresResolver(self._graph)
 
     def plot_graph(self):
         pos = nx.spring_layout(self._graph)
@@ -70,6 +72,9 @@ class Extractor:
 
         # Resolve disambiguate terms
         self._resolve_disambiguate_terms()
+
+        # Resolve anaphores
+        self._anaphores_resolver.resolve_anaphores()
 
     def _find_compound_words(self, phrase: str) -> None:
         """
