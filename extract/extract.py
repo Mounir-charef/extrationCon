@@ -30,10 +30,9 @@ class Extractor:
         phrase = phrase.lower()
 
         self._words = self._tokenizer(phrase)
-        # Add JDM words
-        self._get_data_info()
         self._words.insert(0, "⊤")
         self._words.append("⊥")
+
         self._graph.add_nodes_from(self._words)
 
         if not self._words:
@@ -43,6 +42,9 @@ class Extractor:
             self._graph.add_edge(
                 self._words[index], self._words[index + 1], label="r_succ"
             )
+
+        # Add JDM words
+        self._get_data_info()
 
         # Add compound words
         self._find_compound_words(phrase)
