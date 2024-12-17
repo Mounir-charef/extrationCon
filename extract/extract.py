@@ -19,6 +19,25 @@ class Extractor:
         self._disambiguate_terms_store = DisambiguateTermsStore()
         self.jdm_words_store = JDMWordsStore()
 
+    def plot_graph(self):
+        pos = nx.spring_layout(self._graph)
+        labels = nx.get_edge_attributes(self._graph, "label")
+
+        plt.figure(figsize=(10, 8))
+        nx.draw(
+            self._graph,
+            pos,
+            with_labels=True,
+            node_size=3000,
+            node_color="skyblue",
+            font_size=15,
+            font_weight="bold",
+            edge_color="gray",
+        )
+        nx.draw_networkx_edge_labels(self._graph, pos, edge_labels=labels)
+        plt.title("Graph Visualization")
+        plt.show()
+
     def _tokenizer(self, text) -> List[str]:
         tokens = self._pattern.findall(text)
         return [token for match in tokens for token in match if token]
@@ -50,26 +69,7 @@ class Extractor:
         self._find_compound_words(phrase)
 
         # Resolve disambiguate terms
-        self.resolve_disambiguate_terms()
-
-    def plot_graph(self):
-        pos = nx.spring_layout(self._graph)
-        labels = nx.get_edge_attributes(self._graph, "label")
-
-        plt.figure(figsize=(10, 8))
-        nx.draw(
-            self._graph,
-            pos,
-            with_labels=True,
-            node_size=3000,
-            node_color="skyblue",
-            font_size=15,
-            font_weight="bold",
-            edge_color="gray",
-        )
-        nx.draw_networkx_edge_labels(self._graph, pos, edge_labels=labels)
-        plt.title("Graph Visualization")
-        plt.show()
+        self._resolve_disambiguate_terms()
 
     def _find_compound_words(self, phrase: str) -> None:
         """
@@ -112,7 +112,7 @@ class Extractor:
                 except ValueError:
                     break
 
-    def resolve_disambiguate_terms(self) -> None:
+    def _resolve_disambiguate_terms(self) -> None:
         """
         Resolve disambiguate terms in the graph by adding the most likely term as a node and connecting the original term to the most likely term
         :return: None
