@@ -2,6 +2,8 @@ import requests
 from tqdm import tqdm
 import re
 from .cached_store import CachedStore
+from datetime import timedelta
+from typing import Optional
 
 CACHE_FILE = "compound_words_cache.pkl"
 
@@ -10,8 +12,8 @@ class CompoundWordsStore(CachedStore):
     URL = "https://www.jeuxdemots.org/JDM-LEXICALNET-FR/20240924-LEXICALNET-JEUXDEMOTS-ENTRIES-MWE.txt"
     WORD_PATTERN = re.compile(r"(\d+);\"(.+)\";")
 
-    def __init__(self):
-        super().__init__(cache_file=CACHE_FILE)
+    def __init__(self, *, cache_expiry: Optional[timedelta] = None):
+        super().__init__(cache_file=CACHE_FILE, cache_expiry=cache_expiry)
 
     def _get_process_data(self) -> list[str]:
         try:
