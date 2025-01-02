@@ -3,7 +3,6 @@ import requests
 from tqdm import tqdm
 import zipfile
 import io
-import datetime
 from collections import defaultdict
 
 from .cached_store import CachedStore

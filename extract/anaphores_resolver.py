@@ -19,7 +19,7 @@ class AnaphoresResolver:
         for pronoun in pronouns:
             # Find the best antecedent for the pronoun
             best_antecedent = None
-            best_score = float('-inf')
+            best_score = float("-inf")
 
             for article, antecedent in antecedents.items():
                 score = self._score_antecedent(antecedent, pronoun)
@@ -57,7 +57,6 @@ class AnaphoresResolver:
                 for neighbor in self.graph.neighbors(node):
                     if self.graph[node][neighbor]["label"] == "r_succ":
                         antecedents[node] = neighbor
-        print(antecedents)
         return antecedents
 
     def _find_pronouns(self):
@@ -76,4 +75,6 @@ class AnaphoresResolver:
         :param pronoun: The pronoun node.
         :return: The score of the antecedent.
         """
-        return 1 / (1 + nx.shortest_path_length(self.graph, source=antecedent, target=pronoun))
+        return 1 / (
+            1 + nx.shortest_path_length(self.graph, source=antecedent, target=pronoun)
+        )

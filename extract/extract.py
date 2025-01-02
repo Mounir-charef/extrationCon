@@ -141,12 +141,7 @@ class Extractor:
         if any word is not in the Store, fetch it and cache it
         else just display the data
         """
-        data = self.jdm_words_store.get_data()
-        for word in self._words:
-            if word not in data:
-                new_data = self.jdm_words_store.fetch_new_data(word)
-                # update the cached data
-                self.jdm_words_store.update_and_cache(word, new_data)
+        self.jdm_words_store.fetch_new_data(self._words)
 
     def __call__(self, phrase: str):
         self._process(phrase)
