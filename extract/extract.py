@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from .compount_words import CompoundWordsStore
 from .disambiguate_terms import DisambiguateTermsStore
 from .jdmLoad import JDMWordsStore
+from .anaphores_resolver import AnaphoresResolver
+from .pos import PosStore
 import re
 import datetime
 
@@ -12,12 +14,15 @@ class Extractor:
     def __init__(self):
         self._graph = nx.Graph()
         self._words: List[str] = []
-        self._pattern = re.compile(r"(\S+)'(\S+)|(\S+)")
+        self._pattern = re.compile(r"(\S+)'(\S+)|(\S+)", re.IGNORECASE)
+        self._punctuation_pattern = re.compile(r"[^\w'-]")
         self._compound_words_store = CompoundWordsStore(
             cache_expiry=datetime.timedelta(days=30)
         )
         self._disambiguate_terms_store = DisambiguateTermsStore()
-        self.jdm_words_store = JDMWordsStore()
+        self._jdm_words_store = JDMWordsStore()
+        self._pos_store = PosStore()
+        self._anaphores_resolver = AnaphoresResolver(self._graph)
 
     def plot_graph(self):
         pos = nx.spring_layout(self._graph)
@@ -40,7 +45,10 @@ class Extractor:
 
     def _tokenizer(self, text) -> List[str]:
         tokens = self._pattern.findall(text)
-        return [token for match in tokens for token in match if token]
+        # flatten the list
+        tokens = [token for match in tokens for token in match if token]
+        clean_tokens = [self._punctuation_pattern.sub("", token) for token in tokens]
+        return [token for token in clean_tokens if token]
 
     def _process(self, phrase: str) -> None:
         assert phrase, "The phrase is empty"
@@ -65,11 +73,29 @@ class Extractor:
         # Add JDM words
         self._get_data_info()
 
+        # Add POS
+        self._find_pos(self._words[1:-1])
+
         # Add compound words
         self._find_compound_words(phrase)
 
         # Resolve disambiguate terms
         self._resolve_disambiguate_terms()
+
+        # Resolve anaphores
+        self._anaphores_resolver.resolve_anaphores()
+
+    def _find_pos(self, words: list[str]) -> None:
+        """
+        Find the POS of the word and add it to the graph as a node
+        :param words: list[str]
+        :return: None
+        """
+        for word in words:
+            possibles_pos = self._pos_store.get(word)
+            for pos, weight in possibles_pos.items():
+                self._graph.add_node(pos)
+                self._graph.add_edge(word, pos, label=f"r_pos:{weight}")
 
     def _find_compound_words(self, phrase: str) -> None:
         """
@@ -87,9 +113,10 @@ class Extractor:
                 try:
                     first_index = self._words.index(words[0], start_index)
                     if all(
-                        self._words[first_index + i] == words[i]
-                        for i in range(len(words))
+                            self._words[first_index + i] == words[i]
+                            for i in range(len(words))
                     ):
+                        self._words.append(compound_word)
                         self._graph.add_node(compound_word)
                         last_index = first_index + len(words) - 1
 
@@ -117,8 +144,7 @@ class Extractor:
         Resolve disambiguate terms in the graph by adding the most likely term as a node and connecting the original term to the most likely term
         :return: None
         """
-        found_words = list(self._graph.nodes)
-        for word in found_words:
+        for word in self._words:
             if word in self._disambiguate_terms_store.disambiguate_terms:
                 most_likely = sorted(
                     self._disambiguate_terms_store.get_disambiguate_term(word)
@@ -132,12 +158,7 @@ class Extractor:
         if any word is not in the Store, fetch it and cache it
         else just display the data
         """
-        data = self.jdm_words_store.get_data()
-        for word in self._words:
-            if word not in data:
-                new_data = self.jdm_words_store.fetch_new_data(word)
-                # update the cached data
-                self.jdm_words_store.update_and_cache(word, new_data)
+        self._jdm_words_store.fetch_new_data(self._words[1:-1])
 
     def __call__(self, phrase: str):
         self._process(phrase)

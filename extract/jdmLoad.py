@@ -12,18 +12,16 @@ class JDMWordsStore(CachedStore):
     def __init__(self):
         super().__init__(cache_file=CACHE_FILE)
 
-    def _get_process_data(self, *args, **kwargs) -> dict:
-        return self.fetch_new_data(*args, **kwargs)
+    def _get_process_data(self) -> dict:
+        return {}
 
-    def update_and_cache(self, word: str, data: dict):
+    def _update_and_cache(self, word: str, data: dict):
         self.data[word] = data
         self.last_updated = datetime.now()
         self._save_cache()
 
     @staticmethod
-    def fetch_new_data(word: str = None) -> dict:
-        if word is None:
-            return {}
+    def _fetch_data(word: str) -> dict:
         URL = (
             "https://www.jeuxdemots.org/rezo-dump.php?gotermsubmit=Chercher&gotermrel="
             + word.replace(" ", "+")
@@ -46,7 +44,7 @@ class JDMWordsStore(CachedStore):
         word_dump = {"eid": "", "nt": [], "e": [], "r": [], "rt": []}
         for line in tqdm(
             response.iter_lines(),
-            desc="Downloading content...",
+            desc=f"Getting word dump for {word} from jdm...",
         ):
             if line:
                 if "(eid=" in line.decode("latin-1"):
@@ -77,8 +75,18 @@ class JDMWordsStore(CachedStore):
                 rt = rt_pattern.match(line.decode("latin-1"))
                 if rt:
                     word_dump["rt"].append(rt.groups())
-        print("Data fetched successfully")
         return word_dump
+
+    def fetch_new_data(self, data: str | list[str]) -> None:
+        if isinstance(data, str) and data in self.data:
+            new_data = self._fetch_data(data)
+            self._update_and_cache(data, new_data)
+        else:
+            for word in data:
+                if word in self.data:
+                    continue
+                new_data = self._fetch_data(word)
+                self._update_and_cache(word, new_data)
 
     @property
     def word(self):
