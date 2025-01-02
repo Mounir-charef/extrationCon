@@ -1,4 +1,4 @@
-from cached_store import CachedStore
+from .cached_store import CachedStore
 import requests
 from datetime import datetime
 from tqdm import tqdm
@@ -36,12 +36,6 @@ class PosStore(CachedStore):
         self.data[word] = data
         self.last_updated = datetime.now()
         self._save_cache()
-
-    def get_highest_post(self, word):
-        pos_data = self.get(word)
-        if not pos_data:
-            return None
-        return max(pos_data, key=pos_data.get)
 
     def get(self, word):
         if word not in self.data:
